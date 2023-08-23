@@ -1,0 +1,25 @@
+# default
+__pycache__
+*/__pycache__
+.DS_Store
+.vscode
+
+# logs
+*.log
+runs/
+
+# checkpoints
+*/checkpoints
+
+# others
+*.sh
+*.npy
+*.pdf
+
+# datasets
+/data
+
+# tools
+/bspm/matlab_proceed_h5
+/bspm/find_best_params.py
+/bspm/logs
