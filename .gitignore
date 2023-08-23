@@ -20,6 +20,6 @@ runs/
 /data
 
 # tools
-/bspm/matlab_proceed_h5
-/bspm/find_best_params.py
-/bspm/logs
+/hbra/matlab_proceed_h5
+/hbra/find_best_params.py
+/hbra/logs

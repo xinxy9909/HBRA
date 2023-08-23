@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument('--pretrain', type=int, default=0, help='whether we use pretrained weight or not')
     parser.add_argument('--seed', type=int, default=2020, help='random seed')
     parser.add_argument('--model', type=str, default='lgn', help='rec-model, support [mf, lgn]')
-    parser.add_argument('--simple_model', type=str, default='none', help='simple-rec-model, support [none, lgn-ide, gf-cf, bspm]')
+    parser.add_argument('--simple_model', type=str, default='none', help='simple-rec-model, support [none, lgn-ide, gf-cf, hbra]')
 
     parser.add_argument('--adjoint', type=eval, default=False, choices=[True, False])
     parser.add_argument('--solver_idl', type=str, default='euler', help="heat equation solver")

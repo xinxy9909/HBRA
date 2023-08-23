@@ -1,4 +1,4 @@
-name: bspm
+name: hbra
 channels:
   - pytorch
   - nvidia

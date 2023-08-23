@@ -74,8 +74,11 @@ def Test(dataset, Recmodel, epoch, w=None, multicore=0):
         lm = model.LGCN_IDE(adj_mat)
         lm.train()
     elif (world.simple_model == 'gf-cf'):
+        lm = model.GF_CF(adj_mat)
+        lm.train()
+    elif world.simple_model == 'hbra':
         meta_path_net = dataset.dict_meta_path_net
-        lm = model.GF_CF(meta_path_net)
+        lm = model.HBRA(meta_path_net)
         lm.train()
     elif (world.simple_model == 'bspm'):
         lm = model.BSPM(adj_mat, world.config)
@@ -106,7 +109,7 @@ def Test(dataset, Recmodel, epoch, w=None, multicore=0):
         start = time.time()
         total_time = 0
         i = 1
-        if world.simple_model == 'gf-cf':
+        if world.simple_model == 'hbra':
             batch_test = {}
             batch_test['item'] = convert_sp_mat_to_sp_tensor(adj_mat).to('cuda:0')
             batch_test['user'] = convert_sp_mat_to_sp_tensor(adj_mat.T).to('cuda:0')
@@ -121,8 +124,12 @@ def Test(dataset, Recmodel, epoch, w=None, multicore=0):
             groundTrue = [testDict[u] for u in batch_users]
             batch_users_gpu = torch.Tensor(batch_users).long()
             batch_users_gpu = batch_users_gpu.to(world.device)
-            if (world.simple_model in ['gf-cf', 'bspm']):
+            if world.simple_model == 'hbra':
                 rating = all_rating[batch_users]
+                rating = rating.to(world.device)
+            elif (world.simple_model in ['gf-cf', 'bspm']):
+                rating = lm.getUsersRating(batch_users, world.dataset)
+                rating = torch.from_numpy(rating)
                 rating = rating.to(world.device)
             elif (world.simple_model == 'bspm-torch'):
                 if not torch.is_tensor(adj_mat):
