@@ -221,6 +221,7 @@ class Loader(BasicDataset):
         self.mode = self.mode_dict['train']
         self.n_user = 0
         self.m_item = 0
+        self.model = world.simple_model
         train_file = path + '/train.txt'
         test_file = path + '/test.txt'
         self.path = path
@@ -278,91 +279,92 @@ class Loader(BasicDataset):
         # (users,items), bipartite graph
         self.UserItemNet = csr_matrix((np.ones(len(self.trainUser)), (self.trainUser, self.trainItem)),
                                       shape=(self.n_user, self.m_item))
-        if config['dataset'] == 'ml-latest-small' or config['dataset'] == 'ml-25m':
-            if not os.path.exists(f'{path}/dict_meta_path_net.pkl'):
-                n_user, m_item, movies, genres = self._generate_matrix_base_meta_path(f'{path}/movie_genre.txt')
-                self.MovieGenreNet = csr_matrix((np.ones(len(movies)), (movies, genres)),
-                                          shape=(self.m_item, m_item))
-                self.dict_meta_path_net['item'] = {}
-                self.dict_meta_path_net['item']['movie_genre'] = self.MovieGenreNet
-                n_user, m_item, movies, tags = self._generate_matrix_base_meta_path(f'{path}/movie_tag.txt')
-                self.MovieTagNet = csr_matrix((np.ones(len(movies)), (movies, tags)),
-                                                shape=(self.m_item, m_item))
-                n_user, m_item, users, tags = self._generate_matrix_base_meta_path(f'{path}/user_tag.txt')
-                self.UserTagNet = csr_matrix((np.ones(len(users)), (users, tags)),
-                                             shape=(self.n_user, m_item))
-                n_user, m_item, movies, tags = self._generate_matrix_base_meta_path(f'{path}/movie_year.txt')
-                self.MovieYearNet = csr_matrix((np.ones(len(movies)), (movies, tags)),
+        if self.model == 'hbra':
+            if config['dataset'] == 'ml-latest-small' or config['dataset'] == 'ml-25m':
+                if not os.path.exists(f'{path}/dict_meta_path_net.pkl'):
+                    n_user, m_item, movies, genres = self._generate_matrix_base_meta_path(f'{path}/movie_genre.txt')
+                    self.MovieGenreNet = csr_matrix((np.ones(len(movies)), (movies, genres)),
                                               shape=(self.m_item, m_item))
-                self.dict_meta_path_net['item']['movie_year'] = self.MovieYearNet
-                # meta_path = ['movie_tag', 'tag_user', 'user_movie']
-                # 这条元路径，因为tag结点太少，结果不好。
-                meta_path = ['movie_tag', 'tag_user']
-                init_matrix, op_matrix = None, None
-                for p in meta_path:
-                    if p == 'movie_tag':
-                        op_matrix = self.MovieTagNet
-                    elif p == 'tag_user':
-                        op_matrix = self.UserTagNet.transpose()
-                    elif p == 'user_movie':
-                        op_matrix = self.UserItemNet
-                    if init_matrix is None:
-                        init_matrix = op_matrix
-                    else:
-                        init_matrix = init_matrix @ op_matrix
-                self.MetaPathNet = init_matrix
-                self.dict_meta_path_net['item']['movie_tag_user'] = self.MetaPathNet
-                with open(f'{path}/dict_meta_path_net.pkl', 'wb') as f:
-                    pkl.dump(self.dict_meta_path_net, f)
-            else:
-                with open(f'{path}/dict_meta_path_net.pkl', 'rb') as f:
-                    self.dict_meta_path_net = pkl.load(f)
-            # 设置CF元路径
-            self.dict_meta_path_net['item']['movie_user_movie'] = self.UserItemNet.transpose()
-            self.dict_meta_path_net['user'] = {}
-            self.dict_meta_path_net['user']['user_movie_user'] = self.UserItemNet
-        if config['dataset'] == 'yelp':
-            if not os.path.exists(f'{path}/dict_meta_path_net.pkl'):
-                n_user, m_item, movies, genres = self._generate_matrix_base_meta_path(f'{path}/item_position.txt')
-                self.ItemPosNet = csr_matrix((np.ones(len(movies)), (movies, genres)),
-                                          shape=(self.m_item, m_item))
-                self.dict_meta_path_net['item'] = {}
-                self.dict_meta_path_net['item']['item_position'] = self.ItemPosNet
-                n_user, m_item, movies, tags = self._generate_matrix_base_meta_path(f'{path}/item_type.txt')
-                self.ItemTypeNet = csr_matrix((np.ones(len(movies)), (movies, tags)),
+                    self.dict_meta_path_net['item'] = {}
+                    self.dict_meta_path_net['item']['movie_genre'] = self.MovieGenreNet
+                    n_user, m_item, movies, tags = self._generate_matrix_base_meta_path(f'{path}/movie_tag.txt')
+                    self.MovieTagNet = csr_matrix((np.ones(len(movies)), (movies, tags)),
+                                                    shape=(self.m_item, m_item))
+                    n_user, m_item, users, tags = self._generate_matrix_base_meta_path(f'{path}/user_tag.txt')
+                    self.UserTagNet = csr_matrix((np.ones(len(users)), (users, tags)),
+                                                 shape=(self.n_user, m_item))
+                    n_user, m_item, movies, tags = self._generate_matrix_base_meta_path(f'{path}/movie_year.txt')
+                    self.MovieYearNet = csr_matrix((np.ones(len(movies)), (movies, tags)),
+                                                  shape=(self.m_item, m_item))
+                    self.dict_meta_path_net['item']['movie_year'] = self.MovieYearNet
+                    # meta_path = ['movie_tag', 'tag_user', 'user_movie']
+                    # 这条元路径，因为tag结点太少，结果不好。
+                    meta_path = ['movie_tag', 'tag_user']
+                    init_matrix, op_matrix = None, None
+                    for p in meta_path:
+                        if p == 'movie_tag':
+                            op_matrix = self.MovieTagNet
+                        elif p == 'tag_user':
+                            op_matrix = self.UserTagNet.transpose()
+                        elif p == 'user_movie':
+                            op_matrix = self.UserItemNet
+                        if init_matrix is None:
+                            init_matrix = op_matrix
+                        else:
+                            init_matrix = init_matrix @ op_matrix
+                    self.MetaPathNet = init_matrix
+                    self.dict_meta_path_net['item']['movie_tag_user'] = self.MetaPathNet
+                    with open(f'{path}/dict_meta_path_net.pkl', 'wb') as f:
+                        pkl.dump(self.dict_meta_path_net, f)
+                else:
+                    with open(f'{path}/dict_meta_path_net.pkl', 'rb') as f:
+                        self.dict_meta_path_net = pkl.load(f)
+                # 设置CF元路径
+                self.dict_meta_path_net['item']['movie_user_movie'] = self.UserItemNet.transpose()
+                self.dict_meta_path_net['user'] = {}
+                self.dict_meta_path_net['user']['user_movie_user'] = self.UserItemNet
+            if config['dataset'] == 'yelp':
+                if not os.path.exists(f'{path}/dict_meta_path_net.pkl'):
+                    n_user, m_item, movies, genres = self._generate_matrix_base_meta_path(f'{path}/item_position.txt')
+                    self.ItemPosNet = csr_matrix((np.ones(len(movies)), (movies, genres)),
                                               shape=(self.m_item, m_item))
-                self.dict_meta_path_net['item']['item_type'] = self.ItemTypeNet
-                n_user, m_item, movies, tags = self._generate_matrix_base_meta_path(f'{path}/user_year.txt')
-                self.UserYearNet = csr_matrix((np.ones(len(movies)), (movies, tags)),
-                                              shape=(self.n_user, m_item))
-                self.dict_meta_path_net['user'] = {}
-                self.dict_meta_path_net['user']['user_year'] = self.UserYearNet
-                # meta_path = ['user_business', 'business_pos', 'pos_business']
-                # init_matrix, op_matrix = None, None
-                # for p in meta_path:
-                #     if p == 'business_pos':
-                #         op_matrix = self.ItemPosNet
-                #     elif p == 'pos_business':
-                #         op_matrix = self.ItemPosNet.transpose()
-                #     elif p == 'user_business':
-                #         op_matrix = self.UserItemNet
-                #     if init_matrix is None:
-                #         init_matrix = op_matrix
-                #     else:
-                #         init_matrix = init_matrix @ op_matrix
-                # self.MetaPathNet = init_matrix
-                # self.dict_meta_path_net['user']['user_business_pos_business_user'] = self.MetaPathNet
-                with open(f'{path}/dict_meta_path_net.pkl', 'wb') as f:
-                    pkl.dump(self.dict_meta_path_net, f)
-            else:
-                with open(f'{path}/dict_meta_path_net.pkl', 'rb') as f:
-                    self.dict_meta_path_net = pkl.load(f)
-            if self.dict_meta_path_net.get('item') is None:
-                self.dict_meta_path_net['item'] = {}
-            self.dict_meta_path_net['item']['business_user_business'] = self.UserItemNet.transpose()
-            if self.dict_meta_path_net.get('user') is None:
-                self.dict_meta_path_net['user'] = {}
-            self.dict_meta_path_net['user']['user_business_user'] = self.UserItemNet
+                    self.dict_meta_path_net['item'] = {}
+                    self.dict_meta_path_net['item']['item_position'] = self.ItemPosNet
+                    n_user, m_item, movies, tags = self._generate_matrix_base_meta_path(f'{path}/item_type.txt')
+                    self.ItemTypeNet = csr_matrix((np.ones(len(movies)), (movies, tags)),
+                                                  shape=(self.m_item, m_item))
+                    self.dict_meta_path_net['item']['item_type'] = self.ItemTypeNet
+                    n_user, m_item, movies, tags = self._generate_matrix_base_meta_path(f'{path}/user_year.txt')
+                    self.UserYearNet = csr_matrix((np.ones(len(movies)), (movies, tags)),
+                                                  shape=(self.n_user, m_item))
+                    self.dict_meta_path_net['user'] = {}
+                    self.dict_meta_path_net['user']['user_year'] = self.UserYearNet
+                    # meta_path = ['user_business', 'business_pos', 'pos_business']
+                    # init_matrix, op_matrix = None, None
+                    # for p in meta_path:
+                    #     if p == 'business_pos':
+                    #         op_matrix = self.ItemPosNet
+                    #     elif p == 'pos_business':
+                    #         op_matrix = self.ItemPosNet.transpose()
+                    #     elif p == 'user_business':
+                    #         op_matrix = self.UserItemNet
+                    #     if init_matrix is None:
+                    #         init_matrix = op_matrix
+                    #     else:
+                    #         init_matrix = init_matrix @ op_matrix
+                    # self.MetaPathNet = init_matrix
+                    # self.dict_meta_path_net['user']['user_business_pos_business_user'] = self.MetaPathNet
+                    with open(f'{path}/dict_meta_path_net.pkl', 'wb') as f:
+                        pkl.dump(self.dict_meta_path_net, f)
+                else:
+                    with open(f'{path}/dict_meta_path_net.pkl', 'rb') as f:
+                        self.dict_meta_path_net = pkl.load(f)
+                if self.dict_meta_path_net.get('item') is None:
+                    self.dict_meta_path_net['item'] = {}
+                self.dict_meta_path_net['item']['business_user_business'] = self.UserItemNet.transpose()
+                if self.dict_meta_path_net.get('user') is None:
+                    self.dict_meta_path_net['user'] = {}
+                self.dict_meta_path_net['user']['user_business_user'] = self.UserItemNet
         self.users_D = np.array(self.UserItemNet.sum(axis=1)).squeeze()
         self.users_D[self.users_D == 0.] = 1
         self.items_D = np.array(self.UserItemNet.sum(axis=0)).squeeze()
