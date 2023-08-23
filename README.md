@@ -18,3 +18,4 @@ python main.py --dataset="yelp2018" --topks="[20]" --simple_model="hbra" --testb
 # GPU
 python main.py --dataset="amazon-book" --topks="[20]" --simple_model="hbra"
 ```
+Note: When running the code on datasets with additional information, you need to modify dataloader.py (to define the metapaths) and model.py (to set the hyperparameters for each metapath)
